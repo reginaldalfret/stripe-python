@@ -91,6 +91,16 @@ class StripeError(Exception):
             api_mode="V1",
         )
 
+    def __reduce__(self):
+        state = dict(self.__dict__)
+        state["args"] = self.args
+        return (self.__class__.__new__, (self.__class__,), state)
+
+    def __setstate__(self, state):
+        args = state.pop("args", ())
+        super(StripeError, self).__init__(*args)
+        self.__dict__.update(state)
+
 
 class APIError(StripeError):
     pass

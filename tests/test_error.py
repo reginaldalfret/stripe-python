@@ -114,3 +114,45 @@ class TestApiConnectionError(object):
 
         err = APIConnectionError("msg", should_retry=True)
         assert err.should_retry
+
+
+class TestPickleStripeError(object):
+    def test_pickle_stripe_error(self):
+        import pickle
+        from stripe._error import (
+            InvalidRequestError,
+            CardError,
+            SignatureVerificationError,
+        )
+
+        for err in [
+            StripeError("generic error", http_status=500),
+            InvalidRequestError(
+                "invalid parameter",
+                param="currency",
+                code="parameter_invalid_empty",
+                http_status=400,
+            ),
+            CardError(
+                "card declined",
+                param="number",
+                code="card_declined",
+                http_status=402,
+            ),
+            SignatureVerificationError(
+                "signature mismatch", sig_header="t=123,v1=abc"
+            ),
+        ]:
+            dumped = pickle.dumps(err)
+            loaded = pickle.loads(dumped)
+            assert type(loaded) is type(err)
+            assert str(loaded) == str(err)
+            assert loaded.args == err.args
+            assert loaded.http_status == err.http_status
+            if hasattr(err, "param"):
+                assert loaded.param == err.param
+            if hasattr(err, "code"):
+                assert loaded.code == err.code
+            if hasattr(err, "sig_header"):
+                assert loaded.sig_header == err.sig_header
+
