@@ -116,3 +116,21 @@ class TestApiEncode:
             ("items[1][0]", 3),
             ("items[1][1]", 4),
         ]
+
+    def test_encode_boolean_list_value(self):
+        """Test that boolean values inside lists are encoded as lowercase strings."""
+        result = list(_api_encode({"flags": [True, False]}))
+        assert result == [
+            ("flags[0]", "true"),
+            ("flags[1]", "false"),
+        ]
+
+    def test_encode_boolean_nested_list_value(self):
+        """Test that boolean values inside nested lists are encoded as lowercase strings."""
+        result = list(_api_encode({"matrix": [[True, False], [False, True]]}))
+        assert result == [
+            ("matrix[0][0]", "true"),
+            ("matrix[0][1]", "false"),
+            ("matrix[1][0]", "false"),
+            ("matrix[1][1]", "true"),
+        ]
