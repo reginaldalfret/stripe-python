@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import datetime
+import pytest
 
 import stripe
 
@@ -223,3 +224,59 @@ class TestRawRequest(object):
             resp, api_mode="V1"
         )
         assert isinstance(deserialized, stripe.Account)
+
+    @pytest.mark.anyio
+    async def test_raw_request_async_usage_reported(
+        self, http_client_mock, stripe_mock_stripe_client
+    ):
+        http_client_mock.stub_request(
+            "post",
+            path=self.POST_REL_URL,
+            rbody='{"id": "acct_123", "object": "account"}',
+            rcode=200,
+            rheaders={},
+        )
+
+        expectation = "type=standard&int=123&datetime=1356994801"
+
+        resp = await stripe_mock_stripe_client.raw_request_async(
+            "post", self.POST_REL_URL, **self.ENCODE_INPUTS
+        )
+
+        http_client_mock.assert_requested(
+            "post",
+            path=self.POST_REL_URL,
+            content_type="application/x-www-form-urlencoded",
+            post_data=expectation,
+            usage=["raw_request", "async"],
+        )
+
+        deserialized = stripe_mock_stripe_client.deserialize(
+            resp, api_mode="V1"
+        )
+        assert isinstance(deserialized, stripe.Account)
+
+    @pytest.mark.anyio
+    async def test_raw_request_async_custom_usage_not_sent_as_param(
+        self, http_client_mock, stripe_mock_stripe_client
+    ):
+        http_client_mock.stub_request(
+            "get",
+            path=self.GET_REL_URL,
+            rbody='{"id": "acct_123", "object": "account"}',
+            rcode=200,
+            rheaders={},
+        )
+
+        await stripe_mock_stripe_client.raw_request_async(
+            "get",
+            self.GET_REL_URL,
+            usage=["fetch_related_object", "fetch_related_object_async"],
+        )
+
+        http_client_mock.assert_requested(
+            "get",
+            path=self.GET_REL_URL,
+            query_string="",
+            usage=["fetch_related_object", "fetch_related_object_async", "async"],
+        )

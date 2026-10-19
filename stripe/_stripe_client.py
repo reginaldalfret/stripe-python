@@ -311,6 +311,9 @@ class StripeClient(object):
         api_mode = get_api_mode(url_)
         base_address = params.pop("base", "api")
 
+        # we manually pass usage in event internals, so use those if available
+        usage = params.pop("usage", ["raw_request"])
+
         rbody, rcode, rheaders = await self._requestor.request_raw_async(
             method_,
             url_,
@@ -318,7 +321,7 @@ class StripeClient(object):
             options=options,
             base_address=base_address,
             api_mode=api_mode,
-            usage=["raw_request"],
+            usage=usage,
         )
 
         return self._requestor._interpret_response(
